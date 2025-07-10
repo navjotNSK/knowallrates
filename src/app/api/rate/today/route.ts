@@ -1,30 +1,43 @@
 import { NextResponse } from "next/server"
-// import { AbortSignal } from "abort-controller"
 
 export async function GET() {
   try {
-    // Fetch from Spring Boot backend
+    // Get backend URL from environment
     const backendUrl = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
-    const response = await fetch(`${backendUrl}/api/rate/today`, {
+    const fullUrl = `${backendUrl}/api/rate/today`
+
+    console.log("Fetching from backend URL:", fullUrl)
+
+    const response = await fetch(fullUrl, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        "User-Agent": "KnowAllRates-Frontend/1.0",
       },
-      // Add timeout and error handling
-      signal: AbortSignal.timeout(10000), // 10 second timeout
+      // Remove timeout for Railway
+      cache: "no-store",
     })
 
+    console.log("Backend response status:", response.status)
+    console.log("Backend response headers:", Object.fromEntries(response.headers.entries()))
+
     if (!response.ok) {
-      throw new Error(`Backend API responded with status: ${response.status}`)
+      const errorText = await response.text()
+      console.error("Backend error response:", errorText)
+      throw new Error(`Backend API responded with status: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
+    console.log("Backend response data:", data)
 
-    // Log for debugging
-    console.log("Today rates from backend:", data)
-
-    return NextResponse.json(data)
+    return NextResponse.json(data, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+      },
+    })
   } catch (error) {
     console.error("Error fetching today rates:", error)
 
@@ -50,6 +63,8 @@ export async function GET() {
       status: 200,
       headers: {
         "X-Data-Source": "mock-fallback",
+        "X-Error": error instanceof Error ? error.message : "Unknown error",
+        "Access-Control-Allow-Origin": "*",
       },
     })
   }

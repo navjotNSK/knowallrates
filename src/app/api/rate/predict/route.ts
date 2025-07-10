@@ -2,27 +2,39 @@ import { NextResponse } from "next/server"
 
 export async function GET() {
   try {
-    // Fetch from Spring Boot backend
     const backendUrl = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
-    const response = await fetch(`${backendUrl}/api/rate/predict`, {
+    const fullUrl = `${backendUrl}/api/rate/predict`
+
+    console.log("Fetching prediction from backend URL:", fullUrl)
+
+    const response = await fetch(fullUrl, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        "User-Agent": "KnowAllRates-Frontend/1.0",
       },
-      signal: AbortSignal.timeout(10000), // 10 second timeout
+      cache: "no-store",
     })
 
+    console.log("Backend prediction response status:", response.status)
+
     if (!response.ok) {
-      throw new Error(`Backend API responded with status: ${response.status}`)
+      const errorText = await response.text()
+      console.error("Backend prediction error response:", errorText)
+      throw new Error(`Backend API responded with status: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
+    console.log("Backend prediction response data:", data)
 
-    // Log for debugging
-    console.log("Prediction from backend:", data)
-
-    return NextResponse.json(data)
+    return NextResponse.json(data, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+      },
+    })
   } catch (error) {
     console.error("Error fetching prediction:", error)
 
@@ -34,7 +46,7 @@ export async function GET() {
       date: new Date(Date.now() + 86400000).toISOString().split("T")[0],
       predicted22k: 5875 + (Math.random() - 0.5) * 100,
       predicted24k: 6410 + (Math.random() - 0.5) * 100,
-      confidence: Math.floor(Math.random() * 30) + 70, // 70-100%
+      confidence: Math.floor(Math.random() * 30) + 70,
       trend: randomTrend,
     }
 
@@ -42,6 +54,8 @@ export async function GET() {
       status: 200,
       headers: {
         "X-Data-Source": "mock-fallback",
+        "X-Error": error instanceof Error ? error.message : "Unknown error",
+        "Access-Control-Allow-Origin": "*",
       },
     })
   }

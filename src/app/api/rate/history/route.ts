@@ -5,27 +5,39 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const days = searchParams.get("days") || "10"
 
-    // Fetch from Spring Boot backend
     const backendUrl = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
-    const response = await fetch(`${backendUrl}/api/rate/history?days=${days}`, {
+    const fullUrl = `${backendUrl}/api/rate/history?days=${days}`
+
+    console.log("Fetching history from backend URL:", fullUrl)
+
+    const response = await fetch(fullUrl, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        "User-Agent": "KnowAllRates-Frontend/1.0",
       },
-      signal: AbortSignal.timeout(10000), // 10 second timeout
+      cache: "no-store",
     })
 
+    console.log("Backend history response status:", response.status)
+
     if (!response.ok) {
-      throw new Error(`Backend API responded with status: ${response.status}`)
+      const errorText = await response.text()
+      console.error("Backend history error response:", errorText)
+      throw new Error(`Backend API responded with status: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
+    console.log("Backend history response data size:", data.rates?.length || 0)
 
-    // Log for debugging
-    console.log("History rates from backend:", data)
-
-    return NextResponse.json(data)
+    return NextResponse.json(data, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+      },
+    })
   } catch (error) {
     console.error("Error fetching history rates:", error)
 
@@ -43,6 +55,8 @@ export async function GET(request: NextRequest) {
         status: 200,
         headers: {
           "X-Data-Source": "mock-fallback",
+          "X-Error": error instanceof Error ? error.message : "Unknown error",
+          "Access-Control-Allow-Origin": "*",
         },
       },
     )
