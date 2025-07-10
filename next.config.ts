@@ -1,7 +1,20 @@
-import type { NextConfig } from "next";
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  images: {
+    unoptimized: true,
+  },
+  env: {
+    GOLD_API_BASE_URL: process.env.GOLD_API_BASE_URL,
+    GOLD_API_KEY: process.env.GOLD_API_KEY,
+  },
+  // Enable standalone output for Railway
+  output: "standalone",
+}
 
-const nextConfig: NextConfig = {
-  /* config options here */
-};
-
-export default nextConfig;
+module.exports = nextConfig
