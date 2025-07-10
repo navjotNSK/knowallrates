@@ -2,7 +2,11 @@ import { NextResponse } from "next/server"
 
 export async function GET() {
   try {
-    const backendUrl = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
+    let backendUrl = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
+
+    // Remove trailing slash if present
+    backendUrl = backendUrl.replace(/\/$/, "")
+
     const fullUrl = `${backendUrl}/api/rate/health`
 
     console.log("Health check - Backend URL:", backendUrl)
@@ -50,7 +54,8 @@ export async function GET() {
       backend: backendStatus,
       backendMessage,
       timestamp: new Date().toISOString(),
-      backendUrl,
+      backendUrl: backendUrl,
+      fullUrl: fullUrl,
       responseStatus: response.status,
       responseHeaders: Object.fromEntries(response.headers.entries()),
     })
@@ -65,12 +70,15 @@ export async function GET() {
       }
     }
 
+    const backendUrl = (process.env.GOLD_API_BASE_URL || "http://localhost:8080").replace(/\/$/, "")
+
     return NextResponse.json({
       frontend: "running",
       backend: "disconnected",
       error: errorMessage,
       timestamp: new Date().toISOString(),
-      backendUrl: process.env.GOLD_API_BASE_URL || "http://localhost:8080",
+      backendUrl: backendUrl,
+      fullUrl: `${backendUrl}/api/rate/health`,
     })
   }
 }

@@ -2,8 +2,10 @@ import { NextResponse } from "next/server"
 
 export async function GET() {
   try {
-    // Get backend URL from environment
-    const backendUrl = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
+    // Remove trailing slash from backend URL
+    let backendUrl = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
+    backendUrl = backendUrl.replace(/\/$/, "")
+
     const fullUrl = `${backendUrl}/api/rate/today`
 
     console.log("Fetching from backend URL:", fullUrl)
@@ -15,7 +17,6 @@ export async function GET() {
         Accept: "application/json",
         "User-Agent": "KnowAllRates-Frontend/1.0",
       },
-      // Remove timeout for Railway
       cache: "no-store",
     })
 

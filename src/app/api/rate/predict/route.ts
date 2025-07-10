@@ -2,7 +2,10 @@ import { NextResponse } from "next/server"
 
 export async function GET() {
   try {
-    const backendUrl = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
+    // Remove trailing slash from backend URL
+    let backendUrl = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
+    backendUrl = backendUrl.replace(/\/$/, "")
+
     const fullUrl = `${backendUrl}/api/rate/predict`
 
     console.log("Fetching prediction from backend URL:", fullUrl)
