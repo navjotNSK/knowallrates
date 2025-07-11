@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts"
-import { TrendingUp, TrendingDown, Calendar, User, Settings, LogOut, Bell, Wifi, WifiOff } from "lucide-react"
+import { TrendingUp, TrendingDown, Calendar, User, Settings, LogOut, Bell, Wifi, WifiOff, Shield } from "lucide-react"
+import { authService, type User as UserType } from "@/lib/auth"
 
 // TypeScript interfaces
 interface GoldRate {
@@ -46,6 +48,7 @@ interface PredictionRate {
 }
 
 export default function GoldRatesPage() {
+  const [user, setUser] = useState<UserType | null>(null)
   const [todayRate, setTodayRate] = useState<TodayRate | null>(null)
   const [yesterdayRate, setYesterdayRate] = useState<GoldRate | null>(null)
   const [historyRates, setHistoryRates] = useState<HistoryRate[]>([])
@@ -53,6 +56,13 @@ export default function GoldRatesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null)
+  const router = useRouter()
+
+  // Check authentication status
+  useEffect(() => {
+    const currentUser = authService.getUser()
+    setUser(currentUser)
+  }, [])
 
   // Check backend connection
   const checkBackendConnection = async () => {
@@ -116,6 +126,12 @@ export default function GoldRatesPage() {
 
     fetchData()
   }, [])
+
+  const handleSignOut = () => {
+    authService.logout()
+    setUser(null)
+    router.push("/auth/signin")
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -185,38 +201,58 @@ export default function GoldRatesPage() {
                 <Bell className="h-5 w-5" />
               </Button>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder-user.jpg" alt="Profile" />
-                      <AvatarFallback>U</AvatarFallback>
-                    </Avatar>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src="/placeholder-user.jpg" alt="Profile" />
+                        <AvatarFallback>{user.fullName?.charAt(0) || "U"}</AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">{user.fullName}</p>
+                        <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                        {user.role === "ADMIN" && (
+                          <Badge className="w-fit bg-red-100 text-red-800 text-xs">Admin</Badge>
+                        )}
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push("/profile")}>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+                    {user.role === "ADMIN" && (
+                      <DropdownMenuItem onClick={() => router.push("/admin")}>
+                        <Shield className="mr-2 h-4 w-4" />
+                        <span>Admin Panel</span>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Log out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <Button variant="ghost" onClick={() => router.push("/auth/signin")}>
+                    Sign In
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">John Doe</p>
-                      <p className="text-xs leading-none text-muted-foreground">john@example.com</p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  <Button className="bg-yellow-600 hover:bg-yellow-700" onClick={() => router.push("/auth/signup")}>
+                    Sign Up
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -242,6 +278,24 @@ export default function GoldRatesPage() {
             <div className="flex items-center space-x-2">
               <Wifi className="h-5 w-5 text-green-600" />
               <p className="text-green-800">✅ Connected to backend database - showing live data</p>
+            </div>
+          </div>
+        )}
+
+        {/* Welcome Message for Authenticated Users */}
+        {user && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-800 font-medium">Welcome back, {user.fullName}!</p>
+                <p className="text-blue-600 text-sm">Track live gold rates and market predictions</p>
+              </div>
+              {user.role === "ADMIN" && (
+                <Button onClick={() => router.push("/admin")} className="bg-red-600 hover:bg-red-700">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Admin Panel
+                </Button>
+              )}
             </div>
           </div>
         )}
@@ -451,31 +505,6 @@ export default function GoldRatesPage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Debug Information (only in development) */}
-        {process.env.NODE_ENV === "development" && (
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>Debug Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <p>
-                  <strong>Backend URL:</strong> {process.env.GOLD_API_BASE_URL || "http://localhost:8080"}
-                </p>
-                <p>
-                  <strong>Backend Status:</strong> {backendConnected ? "✅ Connected" : "❌ Disconnected"}
-                </p>
-                <p>
-                  <strong>Data Points:</strong> {historyRates.length} historical records
-                </p>
-                <p>
-                  <strong>Last Updated:</strong> {new Date().toLocaleString()}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </main>
     </div>
   )
