@@ -1,19 +1,17 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    let backendUrl = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
+    const searchParams = request.nextUrl.searchParams
+    const days = searchParams.get("days") || "10"
 
-    // Remove trailing slash if present
+    // Remove trailing slash from backend URL
+    let backendUrl = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
     backendUrl = backendUrl.replace(/\/$/, "")
 
-    const fullUrl = `${backendUrl}/api/rate/health`
+    const fullUrl = `${backendUrl}/api/rate/history?days=${days}`
 
-    console.log("Health check - Backend URL:", backendUrl)
-    console.log("Health check - Full URL:", fullUrl)
-
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+    console.log("Fetching history from backend URL:", fullUrl)
 
     const response = await fetch(fullUrl, {
       method: "GET",
@@ -22,63 +20,48 @@ export async function GET() {
         Accept: "application/json",
         "User-Agent": "KnowAllRates-Frontend/1.0",
       },
-      signal: controller.signal,
       cache: "no-store",
     })
 
-    clearTimeout(timeoutId)
+    console.log("Backend history response status:", response.status)
 
-    console.log("Health check response status:", response.status)
-    console.log("Health check response headers:", Object.fromEntries(response.headers.entries()))
-
-    const backendStatus = response.ok ? "connected" : "disconnected"
-    let backendMessage = "Backend not reachable"
-
-    if (response.ok) {
-      try {
-        backendMessage = await response.text()
-      } catch (e) {
-        backendMessage = "Connected but response unreadable"
-      }
-    } else {
-      try {
-        const errorText = await response.text()
-        backendMessage = `HTTP ${response.status}: ${errorText}`
-      } catch (e) {
-        backendMessage = `HTTP ${response.status}: ${response.statusText}`
-      }
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error("Backend history error response:", errorText)
+      throw new Error(`Backend API responded with status: ${response.status} - ${errorText}`)
     }
 
-    return NextResponse.json({
-      frontend: "running",
-      backend: backendStatus,
-      backendMessage,
-      timestamp: new Date().toISOString(),
-      backendUrl: backendUrl,
-      fullUrl: fullUrl,
-      responseStatus: response.status,
-      responseHeaders: Object.fromEntries(response.headers.entries()),
+    const data = await response.json()
+    console.log("Backend history response data size:", data.rates?.length || 0)
+
+    return NextResponse.json(data, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+      },
     })
   } catch (error) {
-    console.error("Health check error:", error)
+    console.error("Error fetching history rates:", error)
 
-    let errorMessage = "Unknown error"
-    if (error instanceof Error) {
-      errorMessage = error.message
-      if (error.name === "AbortError") {
-        errorMessage = "Request timeout (10s)"
-      }
-    }
+    // Return mock data as fallback
+    const days = Number.parseInt(request.nextUrl.searchParams.get("days") || "10")
+    const rates = Array.from({ length: days }, (_, i) => ({
+      date: new Date(Date.now() - i * 86400000).toISOString().split("T")[0],
+      gold22k: 5800 + Math.random() * 100,
+      gold24k: 6300 + Math.random() * 100,
+    })).reverse()
 
-    const backendUrl = (process.env.GOLD_API_BASE_URL || "http://localhost:8080").replace(/\/$/, "")
-
-    return NextResponse.json({
-      frontend: "running",
-      backend: "disconnected",
-      error: errorMessage,
-      timestamp: new Date().toISOString(),
-      backendUrl: backendUrl,
-      fullUrl: `${backendUrl}/api/rate/health`,
-    })
+    return NextResponse.json(
+      { rates },
+      {
+        status: 200,
+        headers: {
+          "X-Data-Source": "mock-fallback",
+          "X-Error": error instanceof Error ? error.message : "Unknown error",
+          "Access-Control-Allow-Origin": "*",
+        },
+      },
+    )
   }
 }
