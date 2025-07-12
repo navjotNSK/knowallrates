@@ -137,10 +137,6 @@ export default function SignInPage() {
             </p>
           </div>
 
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800 font-medium">Demo Accounts:</p>
-            <p className="text-xs text-blue-600 mt-1">Admin: admin@knowallrates.com / admin123</p>
-          </div>
         </CardContent>
       </Card>
     </div>
