@@ -176,11 +176,11 @@ export default function SignInPage() {
             </div>
           </div>
 
-          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
+          {/* <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
             <p className="text-sm text-gray-800 dark:text-gray-300 font-medium">Demo Accounts:</p>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Admin: admin@knowallrates.com / admin123</p>
             <p className="text-xs text-gray-600 dark:text-gray-400">User: user@knowallrates.com / user123</p>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
     </div>
