@@ -120,3 +120,53 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom scrollbar for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom gradient backgrounds for dark mode */
+.dark .bg-gradient-to-br {
+  background: linear-gradient(to bottom right, #1f2937, #111827);
+}
+
+/* Chart styling for dark mode */
+.dark .recharts-cartesian-grid-horizontal line,
+.dark .recharts-cartesian-grid-vertical line {
+  stroke: #374151;
+}
+
+.dark .recharts-text {
+  fill: #d1d5db;
+}
+
+.dark .recharts-tooltip-wrapper {
+  background: #374151 !important;
+  border: 1px solid #4b5563 !important;
+  border-radius: 8px !important;
+}
+
+.dark .recharts-default-tooltip {
+  background: #374151 !important;
+  border: none !important;
+  color: #f3f4f6 !important;
+}
