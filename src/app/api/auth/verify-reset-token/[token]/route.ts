@@ -1,8 +1,14 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
-export async function GET(request: Request, { params }: { params: { token: string } }) {
+export async function GET(request: NextRequest) {
   try {
-    const { token } = params
+    const url = new URL(request.url)
+    const token = url.pathname.split("/").pop() // Extract token from the URL path
+
+    if (!token) {
+      return NextResponse.json({ valid: false, message: "Token missing" }, { status: 400 })
+    }
+
     console.log("Frontend API: Verifying reset token:", token.substring(0, 10) + "...")
 
     let backendUrl = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
