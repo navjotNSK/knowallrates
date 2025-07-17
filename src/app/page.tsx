@@ -29,6 +29,7 @@ import {
   CreditCard,
   Coins,
   DollarSign,
+  ShoppingCart,
 } from "lucide-react"
 import { authService, type User as UserType } from "@/lib/auth"
 import { useSettings } from "@/lib/settings-context"
@@ -206,6 +207,15 @@ export default function GoldRatesPage() {
 
             {/* Profile Menu */}
             <div className="flex items-center space-x-4">
+              {/* Shop Link */}
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/shop")}
+                className="dark:text-gray-300 dark:hover:text-white flex items-center space-x-2"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                <span>Shop Assets</span>
+              </Button>
               <Button variant="ghost" size="icon" className="dark:text-gray-300 dark:hover:text-white">
                 <Bell className="h-5 w-5" />
               </Button>
@@ -261,6 +271,15 @@ export default function GoldRatesPage() {
                       >
                         <Shield className="mr-2 h-4 w-4" />
                         <span>{t("nav.admin")}</span>
+                      </DropdownMenuItem>
+                    )}
+                    {user.role === "ADMIN" && (
+                      <DropdownMenuItem
+                        onClick={() => router.push("/admin/products")}
+                        className="dark:text-gray-300 dark:hover:bg-gray-700"
+                      >
+                        <Shield className="mr-2 h-4 w-4" />
+                        <span>{t("nav.admin.products")}</span>
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator className="dark:bg-gray-700" />
