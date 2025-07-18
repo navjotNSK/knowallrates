@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -18,16 +18,18 @@ interface Product {
   id: number
   name: string
   description: string
-  price: number
+  basePrice: number // Added basePrice to match backend DTO
+  price: number // This is the final price from backend
   assetName?: string
   discountPercentage?: number
-  imageUrl: string
+  imageUrl: string // Now a local path
+  additionalImages?: string[] // Now local paths
   category: string
   inStock: boolean
   stockQuantity: number
   rating: number
   reviewCount: number
-  weight?: string
+  weight?: string // Changed to string to match frontend input/display
   purity?: string
   isActive: boolean
   createdAt: string
@@ -45,39 +47,52 @@ export default function AdminProductsPage() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    price: "",
+    price: "", // Base price
     assetName: "",
     discountPercentage: "",
-    imageUrl: "",
+    mainImageFile: null as File | null, // For new main image upload
+    mainImageUrlPreview: "" as string | null, // For previewing new main image
+    existingImageUrl: "" as string | null, // For displaying existing main image
+    additionalImageFiles: [] as File[], // For new additional image uploads
+    additionalImagePreviews: [] as string[], // For previewing new additional images
+    existingAdditionalImages: [] as string[], // For displaying existing additional images
     category: "gold",
     stockQuantity: "",
-    weight: "",
+    weight: "", // String for input
     purity: "",
     isActive: true,
   })
 
-  useEffect(() => {
-    if (!authService.isAuthenticated()) {
-      router.push("/auth/signin")
-      return
-    }
-
-    if (!authService.isAdmin()) {
-      router.push("/")
-      return
-    }
-
-    fetchProducts()
-  }, [router])
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const response = await fetch("/api/admin/products", {
         headers: authService.getAuthHeaders(),
       })
       if (response.ok) {
         const data = await response.json()
-        setProducts(data)
+        const mappedProducts: Product[] = data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          basePrice: item.basePrice,
+          price: item.price, // Final price
+          assetName: item.assetName,
+          discountPercentage: item.discountPercentage,
+          imageUrl: item.imageUrl, // This is now a local path
+          additionalImages: item.additionalImages || [], // These are now local paths
+          category: item.category,
+          inStock: item.stockQuantity > 0,
+          stockQuantity: item.stockQuantity,
+          rating: item.rating || 0,
+          reviewCount: item.reviewCount || 0,
+          weight: item.weightInGrams ? `${item.weightInGrams}g` : "", // Format for display
+          purity: item.purity,
+          isActive: item.isActive,
+          createdAt: new Date().toISOString(),
+        }))
+        setProducts(mappedProducts)
+      } else {
+        throw new Error("Failed to fetch products from backend")
       }
     } catch (error) {
       console.error("Failed to fetch products:", error)
@@ -87,8 +102,8 @@ export default function AdminProductsPage() {
           id: 1,
           name: "22K Gold Necklace",
           description: "Beautiful traditional gold necklace with intricate design",
-          price: 125000,
-          assetName: "gold",
+          basePrice: 125000,
+          price: 118750,
           discountPercentage: 5,
           imageUrl: "/placeholder.svg?height=300&width=300",
           category: "gold",
@@ -105,8 +120,8 @@ export default function AdminProductsPage() {
           id: 2,
           name: "Silver Bracelet Set",
           description: "Elegant silver bracelet set for special occasions",
-          price: 8500,
-          assetName: "silver",
+          basePrice: 8500,
+          price: 7650,
           discountPercentage: 10,
           imageUrl: "/placeholder.svg?height=300&width=300",
           category: "silver",
@@ -123,7 +138,24 @@ export default function AdminProductsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [authService])
+
+  useEffect(() => {
+    if (!authService.isAuthenticated()) {
+      router.push("/auth/signin")
+      return
+    }
+
+    if (!authService.isAdmin()) {
+      router.push("/")
+      return
+    }
+
+    // Log the environment variable for debugging
+    console.log("NEXT_PUBLIC_GOLD_API_BASE_URL:", process.env.NEXT_PUBLIC_GOLD_API_BASE_URL)
+
+    fetchProducts()
+  }, [router, authService, fetchProducts])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -131,14 +163,30 @@ export default function AdminProductsPage() {
 
     try {
       const productData = {
-        ...formData,
-        price: Number.parseFloat(formData.price),
-        discountPercentage: formData.discountPercentage ? Number.parseFloat(formData.discountPercentage) : null,
-         weight: formData.weight
-        ? Number.parseFloat(formData.weight)
-        : 0,
+        name: formData.name,
+        description: formData.description,
+        price: Number.parseFloat(formData.price), // Base price
+        assetName: formData.assetName,
+        discountPercentage: formData.discountPercentage ? Number.parseFloat(formData.discountPercentage) : 0,
+        category: formData.category,
         stockQuantity: Number.parseInt(formData.stockQuantity),
+        weight: formData.weight, // Send as string
+        purity: formData.purity,
+        isActive: formData.isActive,
+        // When editing, send existing image URLs if no new file is uploaded
+        imageUrl: formData.mainImageFile ? null : formData.existingImageUrl,
+        additionalImages: formData.additionalImageFiles.length > 0 ? [] : formData.existingAdditionalImages,
       }
+
+      const data = new FormData()
+      data.append("product", JSON.stringify(productData)) // Append product data as JSON string
+
+      if (formData.mainImageFile) {
+        data.append("mainImage", formData.mainImageFile)
+      }
+      formData.additionalImageFiles.forEach((file) => {
+        data.append("additionalImages", file)
+      })
 
       const url = editingProduct ? `/api/admin/products/${editingProduct.id}` : "/api/admin/products"
       const method = editingProduct ? "PUT" : "POST"
@@ -146,18 +194,23 @@ export default function AdminProductsPage() {
       const response = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
           ...authService.getAuthHeaders(),
+          // Do NOT set Content-Type for FormData, browser sets it automatically with boundary
         },
-        body: JSON.stringify(productData),
+        body: data,
       })
 
       if (response.ok) {
         fetchProducts()
         resetForm()
+      } else {
+        const errorData = await response.json()
+        console.error("Failed to save product:", errorData.message || response.statusText)
+        alert(`Failed to save product: ${errorData.message || response.statusText}`)
       }
     } catch (error) {
       console.error("Failed to save product:", error)
+      alert("An unexpected error occurred while saving product.")
     } finally {
       setSaving(false)
     }
@@ -168,10 +221,15 @@ export default function AdminProductsPage() {
     setFormData({
       name: product.name,
       description: product.description,
-      price: product.price.toString(),
-      assetName: product.assetName?.toString() || "",
+      price: product.basePrice.toString(), // Use basePrice for editing
+      assetName: product.assetName || "",
       discountPercentage: product.discountPercentage?.toString() || "",
-      imageUrl: product.imageUrl,
+      mainImageFile: null, // Clear file input for edit
+      mainImageUrlPreview: null, // Clear preview for new upload
+      existingImageUrl: product.imageUrl, // Set existing image URL
+      additionalImageFiles: [], // Clear file input for edit
+      additionalImagePreviews: [], // Clear preview for new upload
+      existingAdditionalImages: product.additionalImages || [], // Set existing additional image URLs
       category: product.category,
       stockQuantity: product.stockQuantity.toString(),
       weight: product.weight || "",
@@ -192,9 +250,14 @@ export default function AdminProductsPage() {
 
       if (response.ok) {
         fetchProducts()
+      } else {
+        const errorData = await response.json()
+        console.error("Failed to delete product:", errorData.message || response.statusText)
+        alert(`Failed to delete product: ${errorData.message || response.statusText}`)
       }
     } catch (error) {
       console.error("Failed to delete product:", error)
+      alert("An unexpected error occurred while deleting product.")
     }
   }
 
@@ -211,9 +274,14 @@ export default function AdminProductsPage() {
 
       if (response.ok) {
         fetchProducts()
+      } else {
+        const errorData = await response.json()
+        console.error("Failed to update product status:", errorData.message || response.statusText)
+        alert(`Failed to update product status: ${errorData.message || response.statusText}`)
       }
     } catch (error) {
       console.error("Failed to update product status:", error)
+      alert("An unexpected error occurred while updating product status.")
     }
   }
 
@@ -224,7 +292,12 @@ export default function AdminProductsPage() {
       price: "",
       assetName: "",
       discountPercentage: "",
-      imageUrl: "",
+      mainImageFile: null,
+      mainImageUrlPreview: null,
+      existingImageUrl: null,
+      additionalImageFiles: [],
+      additionalImagePreviews: [],
+      existingAdditionalImages: [],
       category: "gold",
       stockQuantity: "",
       weight: "",
@@ -241,6 +314,53 @@ export default function AdminProductsPage() {
       ...formData,
       [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     })
+  }
+
+  const handleMainImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setFormData((prev) => ({ ...prev, mainImageFile: file, mainImageUrlPreview: URL.createObjectURL(file) }))
+    } else {
+      setFormData((prev) => ({ ...prev, mainImageFile: null, mainImageUrlPreview: null }))
+    }
+  }
+
+  const handleAdditionalImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0) {
+      const previews = files.map((file) => URL.createObjectURL(file))
+      setFormData((prev) => ({
+        ...prev,
+        additionalImageFiles: files,
+        additionalImagePreviews: previews,
+      }))
+    } else {
+      setFormData((prev) => ({ ...prev, additionalImageFiles: [], additionalImagePreviews: [] }))
+    }
+  }
+
+  const removeExistingAdditionalImage = (indexToRemove: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      existingAdditionalImages: prev.existingAdditionalImages.filter((_, index) => index !== indexToRemove),
+    }))
+  }
+
+  const removeNewAdditionalImage = (indexToRemove: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      additionalImageFiles: prev.additionalImageFiles.filter((_, index) => index !== indexToRemove),
+      additionalImagePreviews: prev.additionalImagePreviews.filter((_, index) => index !== indexToRemove),
+    }))
+  }
+
+  // Helper function to construct image URLs
+  const getImageUrl = (path: string | null | undefined) => {
+    if (!path) return "/placeholder.svg"
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL + "/api/uploads/products"
+    // Ensure baseUrl is not undefined or empty before prepending
+    // If baseUrl is not set, it will default to an empty string, making the path relative to the current origin.
+    return `${baseUrl || ""}${path}`
   }
 
   if (loading) {
@@ -357,8 +477,6 @@ export default function AdminProductsPage() {
                       <Input
                         id="assetName"
                         name="assetName"
-                        // type="number"
-                        // step="0.01"
                         value={formData.assetName}
                         onChange={handleChange}
                         className="dark:bg-gray-700 dark:border-gray-600"
@@ -415,18 +533,84 @@ export default function AdminProductsPage() {
                     </div>
                   </div>
 
+                  {/* Main Image Upload */}
                   <div className="space-y-2">
-                    <Label htmlFor="imageUrl">Image URL *</Label>
+                    <Label htmlFor="mainImage">Main Product Image</Label>
                     <Input
-                      id="imageUrl"
-                      name="imageUrl"
-                      type="url"
-                      value={formData.imageUrl}
-                      onChange={handleChange}
-                      required
-                      placeholder="https://example.com/image.jpg"
-                      className="dark:bg-gray-700 dark:border-gray-600"
+                      id="mainImage"
+                      name="mainImage"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleMainImageUpload}
+                      className="dark:bg-gray-700 dark:border-gray-600 file:text-yellow-600 dark:file:text-yellow-400"
                     />
+                    {(formData.mainImageUrlPreview || formData.existingImageUrl) && (
+                      <div className="mt-2 flex items-center space-x-2">
+                        <img
+                          src={formData.mainImageUrlPreview || getImageUrl(formData.existingImageUrl)}
+                          alt="Main Image Preview"
+                          className="w-24 h-24 object-cover rounded-md border border-gray-200 dark:border-gray-700"
+                        />
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {formData.mainImageFile?.name || "Existing Image"}
+                        </span>
+                      </div>
+                    )}
+                    {!editingProduct && !formData.mainImageFile && (
+                      <p className="text-sm text-red-500">Main image is required for new products.</p>
+                    )}
+                  </div>
+
+                  {/* Additional Images Upload */}
+                  <div className="space-y-2">
+                    <Label htmlFor="additionalImages">Additional Product Images</Label>
+                    <Input
+                      id="additionalImages"
+                      name="additionalImages"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleAdditionalImagesUpload}
+                      className="dark:bg-gray-700 dark:border-gray-600 file:text-yellow-600 dark:file:text-yellow-400"
+                    />
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {formData.existingAdditionalImages.map((imgUrl, index) => (
+                        <div key={`existing-${index}`} className="relative">
+                          <img
+                            src={getImageUrl(imgUrl) || "/placeholder.svg"}
+                            alt={`Additional Image ${index + 1}`}
+                            className="w-24 h-24 object-cover rounded-md border border-gray-200 dark:border-gray-700"
+                          />
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="destructive"
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                            onClick={() => removeExistingAdditionalImage(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                      {formData.additionalImagePreviews.map((previewUrl, index) => (
+                        <div key={`new-${index}`} className="relative">
+                          <img
+                            src={getImageUrl(previewUrl) || "/placeholder.svg"}
+                            alt={`New Additional Image ${index + 1}`}
+                            className="w-24 h-24 object-cover rounded-md border border-gray-200 dark:border-gray-700"
+                          />
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="destructive"
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                            onClick={() => removeNewAdditionalImage(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -443,7 +627,7 @@ export default function AdminProductsPage() {
                   <div className="flex space-x-3 pt-4">
                     <Button
                       type="submit"
-                      disabled={saving}
+                      disabled={saving || (!editingProduct && !formData.mainImageFile)}
                       className="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600"
                     >
                       {saving ? (
@@ -493,12 +677,12 @@ export default function AdminProductsPage() {
                 <Card key={product.id} className="dark:bg-gray-800 dark:border-gray-700">
                   <div className="relative">
                     <img
-                      src={product.imageUrl || "/placeholder.svg"}
+                      src={getImageUrl(product.imageUrl) || "/placeholder.svg"}
                       alt={product.name}
                       className="w-full h-48 object-cover rounded-t-lg"
                     />
                     <div className="absolute top-2 right-2 flex space-x-1">
-                      {product.discountPercentage && (
+                      {product.discountPercentage && product.discountPercentage > 0 && (
                         <Badge className="bg-red-500 text-white text-xs">{product.discountPercentage}% OFF</Badge>
                       )}
                       <Badge
@@ -518,13 +702,11 @@ export default function AdminProductsPage() {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div>
-                          {product.assetName ? (
+                          {product.discountPercentage && product.discountPercentage > 0 ? (
                             <div className="flex items-center space-x-2">
-                              <span className="text-lg font-bold text-green-600">
-                                {product.assetName}
-                              </span>
+                              <span className="text-lg font-bold text-green-600">{formatCurrency(product.price)}</span>
                               <span className="text-sm text-gray-500 line-through">
-                                {formatCurrency(product.price)}
+                                {formatCurrency(product.basePrice)}
                               </span>
                             </div>
                           ) : (
@@ -548,7 +730,7 @@ export default function AdminProductsPage() {
 
                       {(product.weight || product.purity) && (
                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                          {product.weight} • {product.purity}
+                          {product.weight} {product.weight && product.purity ? "•" : ""} {product.purity}
                         </div>
                       )}
 

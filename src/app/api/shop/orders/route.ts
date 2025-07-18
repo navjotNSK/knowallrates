@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     let backendUrl = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
     backendUrl = backendUrl.replace(/\/$/, "")
 
-    const response = await fetch(`${backendUrl}/api/orders`, {
+    const response = await fetch(`${backendUrl}/api/shop/orders`, {
       method: "GET",
       headers: {
         Authorization: authHeader,
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     let backendUrl = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
     backendUrl = backendUrl.replace(/\/$/, "")
 
-    const response = await fetch(`${backendUrl}/api/orders`, {
+    const response = await fetch(`${backendUrl}/api/shop/orders`, {
       method: "POST",
       headers: {
         Authorization: authHeader,
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json()
-    return NextResponse.json(data, {
+     return NextResponse.json(data, {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",

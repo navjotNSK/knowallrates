@@ -9,7 +9,18 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { authService, type User } from "@/lib/auth"
 import { useSettings } from "@/lib/settings-context"
-import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft, CreditCard, Tag, Truck, CheckCircle } from "lucide-react"
+import {
+  ShoppingCart,
+  Plus,
+  Minus,
+  Trash2,
+  ArrowLeft,
+  CreditCard,
+  Tag,
+  Truck,
+  CheckCircle,
+  Package,
+} from "lucide-react"
 
 interface Product {
   id: number
@@ -74,7 +85,7 @@ export default function CartPage() {
     const currentUser = authService.getUser()
     setUser(currentUser)
     fetchCart()
-    // fetchAddresses()
+    fetchAddresses()
   }, [router])
 
   const fetchCart = async () => {
@@ -82,30 +93,24 @@ export default function CartPage() {
       const response = await fetch("/api/shop/cart", {
         headers: authService.getAuthHeaders(),
       })
+
       if (response.ok) {
         const data = await response.json()
-
         const mappedItems: CartItem[] = (data.items || []).map((item: any) => ({
-        id: item.id,
-        totalAmount: item.totalPrice, // Or calculate separately if needed
-        totalItems: item.quantity,
-        product: {
-          id: item.productId,
-          name: item.name,
-          price: item.totalPrice, // fallback if discountPrice is missing
-          discountPrice: item.discountPrice,
-          imageUrl: item.imageUrl,
-          weight: item.weight?.toString() + "g",
-          purity: item.purity,
-        },
-      }))
-
-      setCartItems(mappedItems)  
-      // console.log(data);
-       
-      // setCartItems(data)
-
-    //   setCartItems(data.items || [])
+          id: item.id,
+          totalAmount: item.totalPrice,
+          totalItems: item.quantity,
+          product: {
+            id: item.productId,
+            name: item.name,
+            price: item.totalPrice,
+            discountPrice: item.discountPrice,
+            imageUrl: item.imageUrl,
+            weight: item.weight?.toString() + "g",
+            purity: item.purity,
+          },
+        }))
+        setCartItems(mappedItems)
       }
     } catch (error) {
       console.error("Failed to fetch cart:", error)
@@ -131,21 +136,21 @@ export default function CartPage() {
     }
   }
 
-//   const fetchAddresses = async () => {
-//     try {
-//       const response = await fetch("/api/shop/addresses", {
-//         headers: authService.getAuthHeaders(),
-//       })
-//       if (response.ok) {
-//         const data = await response.json()
-//         setAddresses(data)
-//         const defaultAddr = data.find((addr: Address) => addr.isDefault)
-//         if (defaultAddr) setSelectedAddress(defaultAddr)
-//       }
-//     } catch (error) {
-//       console.error("Failed to fetch addresses:", error)
-//     }
-//   }
+  const fetchAddresses = async () => {
+    try {
+      const response = await fetch("/api/shop/addresses", {
+        headers: authService.getAuthHeaders(),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setAddresses(data)
+        const defaultAddr = data.find((addr: Address) => addr.isDefault)
+        if (defaultAddr) setSelectedAddress(defaultAddr)
+      }
+    } catch (error) {
+      console.error("Failed to fetch addresses:", error)
+    }
+  }
 
   const updateQuantity = async (itemId: number, newQuantity: number) => {
     if (newQuantity < 1) return
@@ -187,7 +192,6 @@ export default function CartPage() {
         },
         body: JSON.stringify({ code: couponCode }),
       })
-
       if (response.ok) {
         const data = await response.json()
         setCouponDiscount(data.discount)
@@ -197,51 +201,51 @@ export default function CartPage() {
     }
   }
 
-//   const saveAddress = async () => {
-//     try {
-//       const response = await fetch("/api/shop/addresses", {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//           ...authService.getAuthHeaders(),
-//         },
-//         body: JSON.stringify(newAddress),
-//       })
-
-//       if (response.ok) {
-//         fetchAddresses()
-//         setShowAddressForm(false)
-//         setNewAddress({
-//           fullName: "",
-//           phoneNumber: "",
-//           addressLine1: "",
-//           addressLine2: "",
-//           city: "",
-//           state: "",
-//           pincode: "",
-//           isDefault: false,
-//         })
-//       }
-//     } catch (error) {
-//       console.error("Failed to save address:", error)
-//     }
-//   }
+  const saveAddress = async () => {
+    try {
+      const response = await fetch("/api/shop/addresses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authService.getAuthHeaders(),
+        },
+        body: JSON.stringify(newAddress),
+      })
+      if (response.ok) {
+        fetchAddresses()
+        setShowAddressForm(false)
+        setNewAddress({
+          fullName: "",
+          phoneNumber: "",
+          addressLine1: "",
+          addressLine2: "",
+          city: "",
+          state: "",
+          pincode: "",
+          isDefault: false,
+        })
+      }
+    } catch (error) {
+      console.error("Failed to save address:", error)
+    }
+  }
 
   const placeOrder = async () => {
     try {
-      const response = await fetch("/api/orders", {
+      const response = await fetch("/api/shop/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...authService.getAuthHeaders(),
         },
         body: JSON.stringify({
-          addressId: selectedAddress?.id,
+          shippingAddress: selectedAddress
+            ? `${selectedAddress.fullName}\n${selectedAddress.addressLine1}\n${selectedAddress.addressLine2 ? selectedAddress.addressLine2 + "\n" : ""}${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.pincode}\nPhone: ${selectedAddress.phoneNumber}`
+            : "",
           couponCode: couponCode || null,
-          paymentMethod: "UPI", // This would come from payment selection
+          paymentMethod: "UPI",
         }),
       })
-
       if (response.ok) {
         const data = await response.json()
         setOrderId(data.orderId)
@@ -326,6 +330,14 @@ export default function CartPage() {
                 {step === "cart" ? "Shopping Cart" : step === "address" ? "Delivery Address" : "Payment"}
               </h1>
             </div>
+            <Button
+              onClick={() => router.push("/shop/orders")}
+              variant="outline"
+              className="dark:border-gray-600 dark:text-gray-300"
+            >
+              <Package className="h-4 w-4 mr-2" />
+              My Orders
+            </Button>
           </div>
         </div>
       </header>
@@ -565,9 +577,9 @@ export default function CartPage() {
                         </Label>
                       </div>
                       <div className="flex space-x-2">
-                        {/* <Button onClick={saveAddress} className="bg-yellow-600 hover:bg-yellow-700"> */}
-                          {/* Save Address
-                        </Button> */}
+                        <Button onClick={saveAddress} className="bg-yellow-600 hover:bg-yellow-700">
+                          Save Address
+                        </Button>
                         <Button variant="outline" onClick={() => setShowAddressForm(false)}>
                           Cancel
                         </Button>
@@ -664,7 +676,7 @@ export default function CartPage() {
                 {step === "address" && (
                   <Button
                     onClick={() => setStep("payment")}
-                    // disabled={!selectedAddress}
+                    disabled={!selectedAddress}
                     className="w-full bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600"
                   >
                     Proceed to Payment
