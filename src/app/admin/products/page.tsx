@@ -353,10 +353,26 @@ export default function AdminProductsPage() {
       additionalImagePreviews: prev.additionalImagePreviews.filter((_, index) => index !== indexToRemove),
     }))
   }
+  
+  const fetchImageUrl = async () => {
+      try {
+        const response = await fetch("/api/uploads/products")
+        if (response.ok) {
+          const data = await response.json()
+          setCart(data.items || [])
+          setCartCount(data.items?.reduce((sum: number, item: CartItem) => sum + item.quantity, 0) || 0)
+        }
+      } catch (error) {
+        console.error("Failed to fetch cart:", error)
+      }
+    }
+  
+
 
   // Helper function to construct image URLs
   const getImageUrl = (path: string | null | undefined) => {
     if (!path) return "/placeholder.svg"
+    console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL + "/api/uploads/products"
     // Ensure baseUrl is not undefined or empty before prepending
     // If baseUrl is not set, it will default to an empty string, making the path relative to the current origin.
