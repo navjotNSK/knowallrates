@@ -2,14 +2,22 @@ import { type NextRequest, NextResponse } from "next/server"
 
 const BACKEND_URL = process.env.GOLD_API_BASE_URL || "http://localhost:8080"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+// Updated type definition for params
+type RouteParams = {
+  params: Promise<{ id: string }>
+}
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
+    // Await the params
+    const { id } = await params
+    
     const authHeader = request.headers.get("authorization")
     if (!authHeader) {
       return NextResponse.json({ message: "Authorization header required" }, { status: 401 })
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/shop/addresses/${params.id}`, {
+    const response = await fetch(`${BACKEND_URL}/api/shop/addresses/${id}`, {
       method: "GET",
       headers: {
         Authorization: authHeader,
@@ -30,8 +38,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
+    // Await the params
+    const { id } = await params
+    
     const authHeader = request.headers.get("authorization")
     if (!authHeader) {
       return NextResponse.json({ message: "Authorization header required" }, { status: 401 })
@@ -59,7 +70,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ message: "Please enter a valid 6-digit pincode" }, { status: 400 })
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/shop/addresses/${params.id}`, {
+    const response = await fetch(`${BACKEND_URL}/api/shop/addresses/${id}`, {
       method: "PUT",
       headers: {
         Authorization: authHeader,
@@ -84,14 +95,17 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
+    // Await the params
+    const { id } = await params
+    
     const authHeader = request.headers.get("authorization")
     if (!authHeader) {
       return NextResponse.json({ message: "Authorization header required" }, { status: 401 })
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/shop/addresses/${params.id}`, {
+    const response = await fetch(`${BACKEND_URL}/api/shop/addresses/${id}`, {
       method: "DELETE",
       headers: {
         Authorization: authHeader,
