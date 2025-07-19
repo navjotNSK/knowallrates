@@ -37,6 +37,7 @@ const translations: Record<string, Record<string, string>> = {
     "nav.profile": "Profile",
     "nav.settings": "Settings",
     "nav.admin": "Admin Panel",
+    "nav.admin.products": "Admin Panel Products",
     "nav.payment": "Pay Us",
     "nav.signout": "Log out",
     "nav.signin": "Sign In",
