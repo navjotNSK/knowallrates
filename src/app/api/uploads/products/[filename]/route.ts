@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { promises as fs } from "fs"
 import path from "path"
 
+// Updated type definition for params
+type RouteParams = {
+  params: Promise<{ filename: string }>
+}
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: RouteParams
 ) {
   try {
     // const authHeader = request.headers.get("authorization")
@@ -13,7 +18,8 @@ export async function GET(
     //   return NextResponse.json({ message: "Authorization required" }, { status: 401 })
     // }
 
-    const { filename } = params
+    // Await the params
+    const { filename } = await params
     
     // Validate filename to prevent directory traversal attacks
     if (!filename || filename.includes("..") || filename.includes("/")) {
