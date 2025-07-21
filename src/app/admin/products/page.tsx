@@ -152,7 +152,7 @@ export default function AdminProductsPage() {
     }
 
     // Log the environment variable for debugging
-    console.log("NEXT_PUBLIC_GOLD_API_BASE_URL:", process.env.NEXT_PUBLIC_GOLD_API_BASE_URL)
+    console.log("NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL)
 
     fetchProducts()
   }, [router, authService, fetchProducts])
@@ -354,21 +354,6 @@ export default function AdminProductsPage() {
     }))
   }
   
-  const fetchImageUrl = async () => {
-      try {
-        const response = await fetch("/api/uploads/products")
-        if (response.ok) {
-          const data = await response.json()
-          setCart(data.items || [])
-          setCartCount(data.items?.reduce((sum: number, item: CartItem) => sum + item.quantity, 0) || 0)
-        }
-      } catch (error) {
-        console.error("Failed to fetch cart:", error)
-      }
-    }
-  
-
-
   // Helper function to construct image URLs
   const getImageUrl = (path: string | null | undefined) => {
     if (!path) return "/placeholder.svg"

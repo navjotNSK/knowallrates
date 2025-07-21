@@ -35,6 +35,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     console.log("Admin page - checking authentication")
+    console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
 
     if (!authService.isAuthenticated()) {
       console.log("Admin page - not authenticated, redirecting to signin")
@@ -59,6 +60,7 @@ export default function AdminPage() {
 
       const authHeaders = authService.getAuthHeaders()
       console.log("Fetching assets with headers:", authHeaders)
+      console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
 
       const response = await fetch("/api/admin/assets", {
         method: "GET",
