@@ -61,6 +61,7 @@ export default function AdminPage() {
       const authHeaders = authService.getAuthHeaders()
       console.log("Fetching assets with headers:", authHeaders)
       console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
+      console.log("process.env.GOLD_API_BASE_URL:", process.env.GOLD_API_BASE_URL)
 
       const response = await fetch("/api/admin/assets", {
         method: "GET",

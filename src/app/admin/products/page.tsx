@@ -153,6 +153,8 @@ export default function AdminProductsPage() {
 
     // Log the environment variable for debugging
     console.log("NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL)
+    console.log("process.env.GOLD_API_BASE_URL:", process.env.GOLD_API_BASE_URL)
+    
 
     fetchProducts()
   }, [router, authService, fetchProducts])
