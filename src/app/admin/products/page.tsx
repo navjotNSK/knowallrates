@@ -360,7 +360,7 @@ export default function AdminProductsPage() {
   const getImageUrl = (path: string | null | undefined) => {
     if (!path) return "/placeholder.svg"
     console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL + "/api/uploads/products"
+    const baseUrl = "/api/uploads/products"
     // Ensure baseUrl is not undefined or empty before prepending
     // If baseUrl is not set, it will default to an empty string, making the path relative to the current origin.
     return `${baseUrl || ""}${path}`
