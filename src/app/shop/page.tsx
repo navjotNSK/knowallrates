@@ -35,6 +35,17 @@ interface CartItem {
   product: Product
 }
 
+
+ // Helper function to construct image URLs
+const getImageUrl = (path: string | null | undefined) => {
+    if (!path) return "/placeholder.svg"
+    console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
+    const baseUrl = "/api/uploads/products"
+    // Ensure baseUrl is not undefined or empty before prepending
+    // If baseUrl is not set, it will default to an empty string, making the path relative to the current origin.
+    return `${baseUrl || ""}${path}`
+}
+
 export default function ShopPage() {
   const { formatCurrency, t } = useSettings()
   const [products, setProducts] = useState<Product[]>([])
@@ -295,7 +306,7 @@ export default function ShopPage() {
             >
               <div className="relative overflow-hidden rounded-t-lg">
                 <img
-                  src={product.imageUrl || "/placeholder.svg"}
+                  src={getImageUrl(product.imageUrl) || "/placeholder.svg"}
                   alt={product.name}
                   className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                 />

@@ -51,6 +51,18 @@ interface Address {
   isDefault: boolean
 }
 
+ // Helper function to construct image URLs
+const getImageUrl = (path: string | null | undefined) => {
+    if (!path) return "/placeholder.svg"
+    console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
+    const baseUrl = "/api/uploads/products"
+    // Ensure baseUrl is not undefined or empty before prepending
+    // If baseUrl is not set, it will default to an empty string, making the path relative to the current origin.
+    return `${baseUrl || ""}${path}`
+}
+
+
+
 export default function CartPage() {
   const { formatCurrency, t } = useSettings()
   const [cartItems, setCartItems] = useState<CartItem[]>([])
@@ -391,7 +403,7 @@ export default function CartPage() {
                           className="flex items-center space-x-4 p-4 border rounded-lg dark:border-gray-600"
                         >
                           <img
-                            src={item.product.imageUrl || "/placeholder.svg"}
+                            src={getImageUrl(item.product.imageUrl) || "/placeholder.svg"}
                             alt={item.product.name}
                             className="w-16 h-16 object-cover rounded"
                           />

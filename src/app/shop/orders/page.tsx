@@ -41,6 +41,17 @@ interface Order {
   items: OrderItem[]
 }
 
+ // Helper function to construct image URLs
+const getImageUrl = (path: string | null | undefined) => {
+    if (!path) return "/placeholder.svg"
+    console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
+    const baseUrl = "/api/uploads/products"
+    // Ensure baseUrl is not undefined or empty before prepending
+    // If baseUrl is not set, it will default to an empty string, making the path relative to the current origin.
+    return `${baseUrl || ""}${path}`
+}
+
+
 export default function OrdersPage() {
   const { formatCurrency } = useSettings()
   const router = useRouter()
@@ -209,7 +220,7 @@ export default function OrdersPage() {
                       {order.items.map((item) => (
                         <div key={item.id} className="flex items-center space-x-4">
                           <img
-                            src={item.productImageUrl || "/placeholder.svg?height=64&width=64"}
+                            src={getImageUrl(item.productImageUrl) || "/placeholder.svg?height=64&width=64"}
                             alt={item.productName}
                             className="w-16 h-16 object-cover rounded-md"
                           />
