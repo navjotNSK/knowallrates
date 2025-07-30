@@ -1,0 +1,34 @@
+# .github/workflows/sync-main-to-dev.yml
+
+name: Controlled Branch Sync
+
+on:
+  workflow_dispatch: # Allows manual trigger of the workflow
+    inputs:
+      from_branch:
+        description: 'The branch to sync from (source)'
+        required: true
+        default: 'main'
+      to_branch:
+        description: 'The branch to sync to (destination)'
+        required: true
+        default: 'env/dev'
+
+jobs:
+  sync-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync from ${{ inputs.from_branch }} to ${{ inputs.to_branch }}
+        run: |
+          git fetch origin
+          git checkout "${{ inputs.to_branch }}"
+          git merge "origin/${{ inputs.from_branch }}" --no-edit || echo "No merge required"
+          git push origin "${{ inputs.to_branch }}"
