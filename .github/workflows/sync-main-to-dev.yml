@@ -3,7 +3,7 @@
 name: Controlled Branch Sync
 
 on:
-  workflow_dispatch: # Allows manual trigger of the workflow
+  workflow_dispatch: # Allows manual trigger of the workflow.
     inputs:
       from_branch:
         description: 'The branch to sync from (source)'
