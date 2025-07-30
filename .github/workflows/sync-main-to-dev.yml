@@ -30,7 +30,8 @@ jobs:
 
       - name: Sync from ${{ inputs.from_branch }} to ${{ inputs.to_branch }}
         run: |
-          git fetch origin
+          git fetch
+          git checkout "${{ inputs.from_branch }}"
           git checkout "${{ inputs.to_branch }}"
-          git merge "origin/${{ inputs.from_branch }}" --no-edit || echo "No merge required"
+          git merge "${{ inputs.from_branch }}" --no-edit || echo "No merge required"
           git push origin "${{ inputs.to_branch }}"
